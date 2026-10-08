@@ -1,0 +1,291 @@
+swagger: '2.0'
+info:
+  title: Getty Images Stock Search
+  description: >-
+    Search the Getty Images stock catalog (creative images and video) and look
+    up Getty Images assets by ID for the Q-S Creative Asset Search agent.
+  version: '1.0'
+host: api.gettyimages.com
+basePath: /v3
+schemes:
+  - https
+consumes: []
+produces:
+  - application/json
+securityDefinitions:
+  api_key:
+    type: apiKey
+    in: header
+    name: Api-Key
+security:
+  - api_key: []
+paths:
+  /search/images/creative:
+    get:
+      operationId: SearchGettyCreativeImages
+      summary: Search Getty Images stock photos
+      description: >-
+        Search the Getty Images stock catalog for creative (commercial) still
+        images. Use for any request for stock photos or images from Getty
+        Images. This does not search the Q-S DAM.
+      parameters:
+        - name: phrase
+          in: query
+          required: true
+          type: string
+          x-ms-summary: Search phrase
+          x-ms-visibility: important
+          description: >-
+            Short keyword search phrase (2-8 words) built from the user's
+            Creative direction, e.g. "private jet flying blue sky side view".
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+          x-ms-summary: Page
+          description: Page number, starting at 1.
+        - name: page_size
+          in: query
+          required: true
+          type: integer
+          default: 10
+          x-ms-summary: Results per page
+          x-ms-visibility: internal
+          description: Number of results per page.
+        - name: orientations
+          in: query
+          required: false
+          type: string
+          enum: [Horizontal, Vertical, Square, PanoramicHorizontal, PanoramicVertical]
+          x-ms-summary: Orientation
+          x-ms-visibility: advanced
+          description: Only set when the user asks for an orientation.
+        - name: number_of_people
+          in: query
+          required: false
+          type: string
+          enum: [none, one, two, group]
+          x-ms-summary: Number of people
+          x-ms-visibility: advanced
+          description: Only set when the user specifies how many people.
+        - name: sort_order
+          in: query
+          required: false
+          type: string
+          enum: [best_match, most_popular, newest, random]
+          x-ms-summary: Sort order
+          x-ms-visibility: advanced
+          description: >-
+            Defaults to best_match. Use newest for fresher or less familiar
+            imagery, most_popular only when asked.
+        - name: fields
+          in: query
+          required: true
+          type: string
+          default: id,title,caption,asset_family,collection_name,preview,thumb
+          x-ms-summary: Fields
+          x-ms-visibility: internal
+          description: Fields to return, including preview image sizes.
+      responses:
+        '200':
+          description: Search results
+          schema:
+            $ref: '#/definitions/ImageSearchResult'
+  /search/videos/creative:
+    get:
+      operationId: SearchGettyCreativeVideos
+      summary: Search Getty Images stock video
+      description: >-
+        Search the Getty Images stock catalog for creative (commercial) video
+        clips. Use when the user asks for video or footage from Getty Images.
+        This does not search the Q-S DAM.
+      parameters:
+        - name: phrase
+          in: query
+          required: true
+          type: string
+          x-ms-summary: Search phrase
+          x-ms-visibility: important
+          description: Short keyword search phrase (2-8 words) built from the user's Creative direction.
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+          x-ms-summary: Page
+          description: Page number, starting at 1.
+        - name: page_size
+          in: query
+          required: true
+          type: integer
+          default: 10
+          x-ms-summary: Results per page
+          x-ms-visibility: internal
+          description: Number of results per page.
+        - name: sort_order
+          in: query
+          required: false
+          type: string
+          enum: [best_match, most_popular, newest, random]
+          x-ms-summary: Sort order
+          x-ms-visibility: advanced
+          description: Defaults to best_match.
+        - name: fields
+          in: query
+          required: true
+          type: string
+          default: id,title,caption,asset_family,collection_name,preview,thumb
+          x-ms-summary: Fields
+          x-ms-visibility: internal
+          description: Fields to return, including preview image sizes.
+      responses:
+        '200':
+          description: Search results
+          schema:
+            $ref: '#/definitions/VideoSearchResult'
+  /images/{ids}:
+    get:
+      operationId: GetGettyImagesById
+      summary: Get Getty Images stock photos by ID
+      description: >-
+        Look up one or more Getty Images stock photos by their numeric Getty
+        asset ID (e.g. 1167612765). Use when the user gives a Getty asset ID.
+        If nothing is found, try the video lookup with the same ID.
+      parameters:
+        - name: ids
+          in: path
+          required: true
+          type: string
+          x-ms-summary: Asset IDs
+          description: One Getty asset ID, or several separated by commas.
+        - name: fields
+          in: query
+          required: true
+          type: string
+          default: id,title,caption,asset_family,collection_name,preview,thumb
+          x-ms-summary: Fields
+          x-ms-visibility: internal
+          description: Fields to return, including preview image sizes.
+      responses:
+        '200':
+          description: Images found
+          schema:
+            type: object
+            properties:
+              images:
+                type: array
+                items:
+                  $ref: '#/definitions/Image'
+              images_not_found:
+                type: array
+                items:
+                  type: string
+  /videos/{ids}:
+    get:
+      operationId: GetGettyVideosById
+      summary: Get Getty Images stock videos by ID
+      description: >-
+        Look up one or more Getty Images stock videos by their numeric Getty
+        asset ID (e.g. 2220937042). Use when the user gives a Getty video ID,
+        or when an image ID lookup finds nothing.
+      parameters:
+        - name: ids
+          in: path
+          required: true
+          type: string
+          x-ms-summary: Asset IDs
+          description: One Getty asset ID, or several separated by commas.
+        - name: fields
+          in: query
+          required: true
+          type: string
+          default: id,title,caption,asset_family,collection_name,preview,thumb
+          x-ms-summary: Fields
+          x-ms-visibility: internal
+          description: Fields to return, including preview image sizes.
+      responses:
+        '200':
+          description: Videos found
+          schema:
+            type: object
+            properties:
+              videos:
+                type: array
+                items:
+                  $ref: '#/definitions/Video'
+              videos_not_found:
+                type: array
+                items:
+                  type: string
+definitions:
+  DisplaySize:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Size name, e.g. comp, preview, thumb
+      uri:
+        type: string
+        description: Preview URL
+      is_watermarked:
+        type: boolean
+  Image:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Getty asset ID
+      title:
+        type: string
+      caption:
+        type: string
+      asset_family:
+        type: string
+        description: creative or editorial
+      collection_name:
+        type: string
+      display_sizes:
+        type: array
+        items:
+          $ref: '#/definitions/DisplaySize'
+  Video:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Getty asset ID
+      title:
+        type: string
+      caption:
+        type: string
+      asset_family:
+        type: string
+      collection_name:
+        type: string
+      display_sizes:
+        type: array
+        items:
+          $ref: '#/definitions/DisplaySize'
+  ImageSearchResult:
+    type: object
+    properties:
+      result_count:
+        type: integer
+        format: int32
+        description: Total matching images
+      images:
+        type: array
+        items:
+          $ref: '#/definitions/Image'
+  VideoSearchResult:
+    type: object
+    properties:
+      result_count:
+        type: integer
+        format: int32
+        description: Total matching videos
+      videos:
+        type: array
+        items:
+          $ref: '#/definitions/Video'

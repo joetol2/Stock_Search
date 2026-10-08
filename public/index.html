@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q-S Creative Asset Search</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Creative Asset Search</h1>
+    <button id="chat-toggle" class="ghost" type="button" aria-controls="chat" aria-expanded="false">Ask the assistant</button>
+  </header>
+
+  <div class="layout">
+    <main>
+      <form id="search-form" class="search" role="search">
+        <div class="search-row">
+          <label class="sr-only" for="q">Search</label>
+          <input id="q" name="q" type="search" placeholder="Describe what you need, or paste an asset ID" autocomplete="off" required>
+          <button type="submit">Search</button>
+        </div>
+        <div class="filters">
+          <fieldset id="source-picker">
+            <legend>Sources</legend>
+          </fieldset>
+          <label>Type
+            <select name="mediaType">
+              <option value="any">Everything</option>
+              <option value="image">Photos</option>
+              <option value="video">Video</option>
+            </select>
+          </label>
+          <div id="stock-filters" class="stock-filters" hidden>
+            <label>Orientation
+              <select name="orientation">
+                <option value="">Any</option>
+                <option value="horizontal">Horizontal</option>
+                <option value="vertical">Vertical</option>
+                <option value="square">Square</option>
+                <option value="panoramic">Panoramic</option>
+              </select>
+            </label>
+            <label>People
+              <select name="people">
+                <option value="">Any</option>
+                <option value="none">None</option>
+                <option value="one">One</option>
+                <option value="two">Two</option>
+                <option value="group">Group</option>
+              </select>
+            </label>
+            <label>Sort
+              <select name="sort">
+                <option value="">Best match</option>
+                <option value="newest">Newest</option>
+                <option value="most_popular">Most popular</option>
+                <option value="random">Random</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <p id="notice" class="notice" hidden></p>
+      </form>
+
+      <section id="results" aria-live="polite"></section>
+    </main>
+
+    <aside id="chat" class="chat" hidden aria-label="Assistant">
+      <div class="chat-head">
+        <h2>Assistant</h2>
+        <button id="chat-new" class="ghost small" type="button">New chat</button>
+      </div>
+      <div id="chat-log" class="chat-log"></div>
+      <form id="chat-form" class="chat-form">
+        <label class="sr-only" for="chat-input">Message</label>
+        <textarea id="chat-input" rows="2" placeholder="e.g. people relaxing on a beach, room for copy, vertical"></textarea>
+        <button type="submit">Send</button>
+      </form>
+    </aside>
+  </div>
+
+  <template id="card-template">
+    <article class="card">
+      <a class="thumb" target="_blank" rel="noopener"></a>
+      <div class="card-body">
+        <h3 class="title"></h3>
+        <p class="name"></p>
+        <p class="meta"></p>
+        <ul class="warnings"></ul>
+        <p class="jobs"></p>
+        <a class="open" target="_blank" rel="noopener"></a>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>

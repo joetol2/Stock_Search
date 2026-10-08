@@ -1,0 +1,191 @@
+With(
+    {
+        pageButtons: true,
+        results: FirstN(Topic.Output.data, 10),
+        currentPage: Coalesce(Topic.Output.meta.current_page, 1),
+        totalPages: Coalesce(Topic.Output.meta.total_pages, 1),
+        totalCount: Coalesce(Topic.Output.meta.total_count, CountRows(Topic.Output.data)),
+        fallbackImg: Coalesce(
+            Text(First(Filter(FirstN(Topic.Output.data, 10), "thumbs.bfldr.com" in Text(attributes.thumbnail_url))).attributes.thumbnail_url),
+            "https://adaptivecards.io/content/cats/1.png"
+        )
+    },
+    {
+        '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+        type: "AdaptiveCard",
+        version: "1.5",
+        body: [
+            {
+                type: "TextBlock",
+                text: "Q-S DAM: Existing Assets · v11",
+                weight: "Bolder",
+                size: "Large",
+                wrap: true
+            },
+            {
+                type: "TextBlock",
+                text: If(
+                    CountRows(results) = 0,
+                    "No matching assets in the Q-S DAM for this search.",
+                    "Page " & Text(currentPage) & " of " & Text(totalPages) &
+                    " | " & Text(totalCount) & " matching assets" &
+                    If(currentPage < totalPages, " | Say ""more"" for the next page", "")
+                ),
+                wrap: true,
+                spacing: "Small",
+                isSubtle: true
+            },
+            {
+                type: "Container",
+                items: ForAll(
+                    Sequence(RoundUp(CountRows(results) / 2, 0)) As resultRow,
+                    {
+                        type: "ColumnSet",
+                        separator: resultRow.Value > 1,
+                        spacing: "Medium",
+                        columns: ForAll(
+                            Sequence(Min(2, CountRows(results) - (resultRow.Value - 1) * 2)) As resultColumn,
+                            With(
+                                {
+                                    asset: Index(results, (resultRow.Value - 1) * 2 + resultColumn.Value)
+                                },
+                                With(
+                                {
+                                    desc: Text(asset.attributes.description),
+                                    fileType: Upper(Text(asset.attributes.extension)),
+                                    thumb: Text(asset.attributes.thumbnail_url)
+                                },
+                                With(
+                                {
+                                    safeThumb: "thumbs.bfldr.com" in thumb,
+                                    plain: Trim(
+                                        Substitute(Substitute(Substitute(
+                                            Concat(Split(desc, "<"), Mid(Value, Coalesce(Find(">", Value), 0) + 1) & " "),
+                                            "&amp;", "&"), "&nbsp;", " "), "&#39;", "'")
+                                    )
+                                },
+                                With(
+                                {
+                                    freeze: Trim(First(Filter(Split(plain, "**"), "FREEZE" in Upper(Value))).Value),
+                                    body: Trim(Concat(Filter(Split(plain, "**"), !("FREEZE" in Upper(Value))), Value & " "))
+                                },
+                                With(
+                                {
+                                    isUsage: !IsBlank(freeze) ||
+                                        StartsWith(body, "Associated Job") ||
+                                        StartsWith(body, "Additional Projects") ||
+                                        StartsWith(body, "Used For") ||
+                                        (Len(body) > 7 && Mid(body, 7, 1) = "_" && (Mid(body, 5, 1) in "0123456789")),
+                                    jobs: Trim(
+                                        If(
+                                            StartsWith(body, "Associated Jobs:"), Mid(body, 17),
+                                            StartsWith(body, "Associated Job:"), Mid(body, 16),
+                                            StartsWith(body, "Additional Projects Used For:"), Mid(body, 30),
+                                            StartsWith(body, "Used For:"), Mid(body, 10),
+                                            body
+                                        )
+                                    )
+                                },
+                                With(
+                                {
+                                    note: If(
+                                        isUsage,
+                                        If(IsBlank(freeze), "", "⚠ " & freeze & If(IsBlank(jobs), "", " | ")) &
+                                        If(IsBlank(jobs), "", "Associated Jobs: " & jobs),
+                                        ""
+                                    ),
+                                    hasDescription: !isUsage && !IsBlank(plain)
+                                },
+                                {
+                                    type: "Column",
+                                    width: "stretch",
+                                    items: [
+                                        {
+                                            type: "Image",
+                                            url: If(safeThumb, thumb, fallbackImg),
+                                            size: "Stretch",
+                                            altText: Coalesce(Text(asset.attributes.name), "Q-S DAM asset preview"),
+                                            isVisible: safeThumb
+                                        },
+                                        {
+                                            type: "TextBlock",
+                                            text: If(fileType = "MOV" || fileType = "MP4" || fileType = "M4V", "🎬 Video (preview not shown)", "Preview not shown"),
+                                            size: "Medium",
+                                            weight: "Bolder",
+                                            isSubtle: true,
+                                            wrap: true,
+                                            isVisible: !safeThumb
+                                        },
+                                        {
+                                            type: "TextBlock",
+                                            text: If(hasDescription, plain, Coalesce(Text(asset.attributes.name), "Untitled asset")),
+                                            wrap: true,
+                                            maxLines: 2,
+                                            weight: "Bolder",
+                                            size: "Small"
+                                        },
+                                        {
+                                            type: "TextBlock",
+                                            text: Text(asset.attributes.name),
+                                            isSubtle: true,
+                                            size: "Small",
+                                            wrap: true,
+                                            maxLines: 1,
+                                            isVisible: hasDescription
+                                        },
+                                        {
+                                            type: "TextBlock",
+                                            text: "ID " & Text(asset.id) & If(IsBlank(fileType), "", " | " & fileType),
+                                            isSubtle: true,
+                                            size: "Small",
+                                            wrap: true
+                                        },
+                                        {
+                                            type: "TextBlock",
+                                            text: note,
+                                            color: If(IsBlank(freeze), "Warning", "Attention"),
+                                            weight: If(IsBlank(freeze), "Default", "Bolder"),
+                                            size: "Small",
+                                            wrap: true,
+                                            maxLines: 4,
+                                            isVisible: !IsBlank(note)
+                                        },
+                                        {
+                                            type: "TextBlock",
+                                            text: "Not approved for use",
+                                            color: "Attention",
+                                            size: "Small",
+                                            weight: "Bolder",
+                                            wrap: true,
+                                            isVisible: asset.attributes.approved = false
+                                        }
+                                    ]
+                                }
+                                )))))
+                            )
+                        )
+                    }
+                )
+            }
+        ],
+        actions: ForAll(
+            Filter(
+                Table(
+                    { show: currentPage > 1, label: "◀ Previous page", page: currentPage - 1 },
+                    { show: currentPage < totalPages, label: "Next page ▶", page: currentPage + 1 }
+                ),
+                show && pageButtons
+            ) As btn,
+            {
+                type: "Action.Submit",
+                title: btn.label,
+                data: {
+                    msteams: {
+                        type: "imBack",
+                        value: "Show page " & Text(btn.page) & " of these DAM results"
+                    }
+                }
+            }
+        )
+    }
+)

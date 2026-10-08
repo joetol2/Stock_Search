@@ -1,0 +1,108 @@
+swagger: '2.0'
+info:
+  title: Q-S Stock Search
+  description: >-
+    Search the Q-S DAM (Getty Media Manager) and the Getty Images stock catalog
+    through the Stock Search website. One tool covers every connected source.
+  version: '1.0'
+# Change this to wherever the Stock Search site is hosted.
+host: stock-search.example.com
+basePath: /api
+schemes:
+  - https
+produces:
+  - application/json
+securityDefinitions:
+  api_key:
+    type: apiKey
+    in: header
+    name: x-api-key
+security:
+  - api_key: []
+paths:
+  /search:
+    get:
+      operationId: SearchStockAssets
+      summary: Search Q-S assets and Getty Images stock
+      description: >-
+        Search existing Q-S DAM assets and Getty Images stock photos and video.
+        Also does an exact lookup when the query is a single asset ID.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          type: string
+          x-ms-summary: Search terms
+          description: 1-8 plain keywords from the request, or one asset ID.
+        - name: sources
+          in: query
+          required: false
+          type: string
+          default: all
+          enum: [all, dam, getty]
+          x-ms-summary: Sources
+          description: all, dam (existing Q-S assets only) or getty (new stock only).
+        - name: page
+          in: query
+          required: false
+          type: integer
+          default: 1
+          x-ms-summary: Page
+          description: 1 for a new search. Last page plus 1 for "more", same terms.
+        - name: mediaType
+          in: query
+          required: false
+          type: string
+          default: any
+          enum: [any, image, video]
+          x-ms-summary: Media type
+          description: Only image or video when the user asks for it.
+        - name: orientation
+          in: query
+          required: false
+          type: string
+          enum: [horizontal, vertical, square, panoramic]
+          x-ms-summary: Orientation
+          description: Getty only, when the user asks.
+      responses:
+        '200':
+          description: Results grouped by source
+          schema:
+            type: object
+            properties:
+              exact:
+                $ref: '#/definitions/Asset'
+              results:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    source: { type: string }
+                    label: { type: string }
+                    page: { type: integer }
+                    totalPages: { type: integer }
+                    total: { type: integer }
+                    error: { type: string }
+                    assets:
+                      type: array
+                      items:
+                        $ref: '#/definitions/Asset'
+definitions:
+  Asset:
+    type: object
+    properties:
+      id: { type: string }
+      sourceLabel: { type: string }
+      title: { type: string }
+      name: { type: string }
+      fileType: { type: string }
+      mediaType: { type: string }
+      thumbnailUrl: { type: string }
+      link: { type: string }
+      linkLabel: { type: string }
+      warnings:
+        type: array
+        items: { type: string }
+      associatedJobs:
+        type: array
+        items: { type: string }

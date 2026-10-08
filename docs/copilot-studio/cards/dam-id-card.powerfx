@@ -1,0 +1,129 @@
+With(
+    {
+        asset: Topic.Output.data,
+        damLink: "https://dam.gettyimages.com/quigley-simpson/#!asset/"
+    },
+    With(
+    {
+        desc: Text(asset.attributes.description),
+        fileType: Upper(Text(asset.attributes.extension)),
+        thumb: Text(asset.attributes.thumbnail_url)
+    },
+    With(
+    {
+        safeThumb: "thumbs.bfldr.com" in thumb,
+        smallFrame: !("thumbs.bfldr.com" in thumb) && ("assets.gettyimages.com" in thumb) && !("Signature=" in thumb),
+        isVideo: fileType = "MOV" || fileType = "MP4" || fileType = "M4V",
+        plain: Trim(
+            Substitute(Substitute(Substitute(
+                Concat(Split(desc, "<"), Mid(Value, Coalesce(Find(">", Value), 0) + 1) & " "),
+                "&amp;", "&"), "&nbsp;", " "), "&#39;", "'")
+        )
+    },
+    With(
+    {
+        freeze: Trim(First(Filter(Split(plain, "**"), "FREEZE" in Upper(Value))).Value),
+        body: Trim(Concat(Filter(Split(plain, "**"), !("FREEZE" in Upper(Value))), Value & " "))
+    },
+    With(
+    {
+        isUsage: !IsBlank(freeze) ||
+            StartsWith(body, "Associated Job") ||
+            StartsWith(body, "Additional Projects") ||
+            StartsWith(body, "Used For") ||
+            (Len(body) > 7 && Mid(body, 7, 1) = "_" && (Mid(body, 5, 1) in "0123456789")),
+        jobs: Trim(
+            If(
+                StartsWith(body, "Associated Jobs:"), Mid(body, 17),
+                StartsWith(body, "Associated Job:"), Mid(body, 16),
+                StartsWith(body, "Additional Projects Used For:"), Mid(body, 30),
+                StartsWith(body, "Used For:"), Mid(body, 10),
+                body
+            )
+        )
+    },
+    With(
+    {
+        note: If(
+            isUsage,
+            If(IsBlank(freeze), "", "⚠ " & freeze & If(IsBlank(jobs), "", " | ")) &
+            If(IsBlank(jobs), "", "Associated Jobs: " & jobs),
+            ""
+        ),
+        hasDescription: !isUsage && !IsBlank(plain)
+    },
+    {
+        '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+        type: "AdaptiveCard",
+        version: "1.5",
+        body: [
+            {
+                type: "TextBlock",
+                text: "Q-S DAM: Existing Asset",
+                weight: "Bolder",
+                size: "Large",
+                wrap: true
+            },
+            {
+                type: "Image",
+                url: If(safeThumb, thumb, smallFrame, thumb & If("?" in thumb, "&", "?") & "width=262", ""),
+                size: "Stretch",
+                altText: Coalesce(Text(asset.attributes.name), "Q-S DAM asset preview"),
+                isVisible: safeThumb || smallFrame
+            },
+            {
+                type: "TextBlock",
+                text: If(isVideo, If(safeThumb || smallFrame, "🎬 Video", "🎬 Video (preview not shown)"), "Preview not shown"),
+                size: If(safeThumb || smallFrame, "Small", "Medium"),
+                weight: "Bolder",
+                isSubtle: true,
+                wrap: true,
+                isVisible: isVideo || !(safeThumb || smallFrame)
+            },
+            {
+                type: "TextBlock",
+                text: Coalesce(Text(asset.attributes.name), "Untitled asset"),
+                weight: "Bolder",
+                wrap: true
+            },
+            {
+                type: "TextBlock",
+                text: plain,
+                wrap: true,
+                size: "Small",
+                isVisible: hasDescription
+            },
+            {
+                type: "TextBlock",
+                text: "ID " & Text(asset.id) & If(IsBlank(fileType), "", " | " & fileType),
+                isSubtle: true,
+                size: "Small"
+            },
+            {
+                type: "TextBlock",
+                text: note,
+                color: If(IsBlank(freeze), "Warning", "Attention"),
+                weight: If(IsBlank(freeze), "Default", "Bolder"),
+                size: "Small",
+                wrap: true,
+                isVisible: !IsBlank(note)
+            },
+            {
+                type: "TextBlock",
+                text: "Not approved for use",
+                color: "Attention",
+                weight: "Bolder",
+                size: "Small",
+                isVisible: asset.attributes.approved = false
+            }
+        ],
+        actions: [
+            {
+                type: "Action.OpenUrl",
+                title: "Open in Media Manager",
+                url: damLink & Text(asset.id)
+            }
+        ]
+    }
+    )))))
+)
