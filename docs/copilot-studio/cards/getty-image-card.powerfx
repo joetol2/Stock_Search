@@ -1,0 +1,114 @@
+With(
+    {
+        results: FirstN(Topic.Output.images, 10),
+        totalCount: Topic.Output.result_count
+    },
+    {
+        '$schema': "http://adaptivecards.io/schemas/adaptive-card.json",
+        type: "AdaptiveCard",
+        version: "1.5",
+        body: [
+            {
+                type: "TextBlock",
+                text: "Getty Images: Stock Catalog",
+                weight: "Bolder",
+                size: "Large",
+                wrap: true
+            },
+            {
+                type: "TextBlock",
+                text: If(
+                    CountRows(results) = 0,
+                    "No Getty Images stock photos were returned for this page.",
+                    "Showing " & Text(CountRows(results)) &
+                    " of " & Text(Coalesce(totalCount, CountRows(results))) &
+                    " matching stock photos. Previews are watermarked and not licensed."
+                ),
+                wrap: true,
+                spacing: "Small",
+                isSubtle: true
+            },
+            {
+                type: "Container",
+                items: ForAll(
+                    Sequence(
+                        RoundUp(CountRows(results) / 2, 0)
+                    ) As resultRow,
+                    {
+                        type: "ColumnSet",
+                        separator: resultRow.Value > 1,
+                        spacing: "Medium",
+                        columns: ForAll(
+                            Sequence(
+                                Min(
+                                    2,
+                                    CountRows(results) -
+                                    (resultRow.Value - 1) * 2
+                                )
+                            ) As resultColumn,
+                            With(
+                                {
+                                    asset: Index(
+                                        results,
+                                        (resultRow.Value - 1) * 2 +
+                                        resultColumn.Value
+                                    )
+                                },
+                                With(
+                                    {
+                                        previewUrl: Coalesce(
+                                            First(Filter(asset.display_sizes, name = "preview")).uri,
+                                            First(Filter(asset.display_sizes, name = "thumb")).uri,
+                                            ""
+                                        ),
+                                        detailUrl: "https://www.gettyimages.com/detail/" & asset.id
+                                    },
+                                    {
+                                        type: "Column",
+                                        width: "stretch",
+                                        selectAction: {
+                                            type: "Action.OpenUrl",
+                                            url: detailUrl
+                                        },
+                                        items: [
+                                            {
+                                                type: "Image",
+                                                url: previewUrl,
+                                                size: "Stretch",
+                                                altText: Coalesce(asset.title, "Getty Images preview"),
+                                                isVisible: !IsBlank(previewUrl)
+                                            },
+                                            {
+                                                type: "TextBlock",
+                                                text: "Preview unavailable",
+                                                size: "Small",
+                                                isSubtle: true,
+                                                wrap: true,
+                                                isVisible: IsBlank(previewUrl)
+                                            },
+                                            {
+                                                type: "TextBlock",
+                                                text: Coalesce(asset.title, asset.caption, "Untitled"),
+                                                wrap: true,
+                                                maxLines: 2,
+                                                weight: "Bolder",
+                                                size: "Small"
+                                            },
+                                            {
+                                                type: "TextBlock",
+                                                text: "Getty " & asset.id & " | Open on Getty Images",
+                                                isSubtle: true,
+                                                size: "Small",
+                                                wrap: true
+                                            }
+                                        ]
+                                    }
+                                )
+                            )
+                        )
+                    }
+                )
+            }
+        ]
+    }
+)

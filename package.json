@@ -1,0 +1,19 @@
+{
+  "name": "stock-search",
+  "version": "0.1.0",
+  "description": "Search the Q-S DAM (Getty Media Manager) and Getty Images stock from one website, with a chat assistant.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.1",
+    "express": "^5.2.1"
+  }
+}
